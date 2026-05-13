@@ -638,4 +638,15 @@
             currentPlaylist = Array.from(container.querySelectorAll('.track-card')).map(c => ({
                 url: c.getAttribute('data-src'),
                 name: c.getAttribute('data-title'),
-               
+                artist: c.getAttribute('data-artist')
+            }));
+            currentTrackIndex = currentPlaylist.findIndex(t => t.url === card.getAttribute('data-src'));
+
+            playTrack(card.getAttribute('data-src'), card.getAttribute('data-title'), card.getAttribute('data-artist'));
+        });
+
+        loadGlobalTracks();
+        console.log('🎸 Time\'s Music готов!');
+    </script>
+</body>
+</html>
