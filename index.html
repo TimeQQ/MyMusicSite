@@ -322,11 +322,11 @@
     </div>
 
     <script>
-        // ============ НАСТРОЙКИ (ПОМЕНЯЙ ТОЛЬКО ЭТО) ============
+        // ============ НАСТРОЙКИ ============
         const GITHUB_OWNER = 'TimeQQ';
         const GITHUB_REPO = 'times-music-storage';
         const GITHUB_TOKEN = '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';
-        // =====================================================
+        // =================================
 
         const playerTitle = document.getElementById('player-title');
         const playerArtist = document.getElementById('player-artist');
@@ -462,21 +462,16 @@
         };
         dbRequest.onsuccess = (e) => { db = e.target.result; loadLocalTracks(); };
 
-        // Загрузка общих треков с авторизацией
+        const headers = { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' };
+
         async function loadGlobalTracks() {
             try {
-                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json?t=${Date.now()}`;
-                const r = await fetch(url, { 
-                    cache: 'no-store',
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-                });
+                const r = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json`, { headers });
                 if (!r.ok) {
-                    await createPlaylistFile();
                     globalTracks = [];
                 } else {
                     const data = await r.json();
-                    const content = JSON.parse(atob(data.content));
-                    globalTracks = content;
+                    globalTracks = JSON.parse(atob(data.content));
                 }
                 renderGlobalTracks();
             } catch(e) {
@@ -485,33 +480,18 @@
             }
         }
 
-        async function createPlaylistFile() {
-            try {
-                await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Authorization': `token ${GITHUB_TOKEN}`, 
-                        'Content-Type': 'application/json' 
-                    },
-                    body: JSON.stringify({ message: 'Init playlist', content: btoa('[]') })
-                });
-            } catch(e) {}
-        }
-
         async function savePlaylist() {
             const content = btoa(unescape(encodeURIComponent(JSON.stringify(globalTracks, null, 2))));
             let sha = null;
             try {
-                const r = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json`, {
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-                });
+                const r = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json`, { headers });
                 sha = (await r.json()).sha;
             } catch(e) {}
             const body = { message: 'Update playlist', content };
             if (sha) body.sha = sha;
             await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json`, {
                 method: 'PUT',
-                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                headers: { ...headers, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
         }
@@ -574,7 +554,7 @@
                     });
                     await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`, {
                         method: 'PUT',
-                        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                        headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: `Add ${d.name}`, content: base64 })
                     });
                     const fileUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${fileName}`;
