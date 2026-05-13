@@ -325,7 +325,7 @@
         // ============ НАСТРОЙКИ (ПОМЕНЯЙ ТОЛЬКО ЭТО) ============
         const GITHUB_OWNER = 'TimeQQ';
         const GITHUB_REPO = 'times-music-storage';
-        const GITHUB_TOKEN = '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';
+        const GITHUB_TOKEN = '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';
         // =====================================================
 
         const playerTitle = document.getElementById('player-title');
@@ -462,15 +462,21 @@
         };
         dbRequest.onsuccess = (e) => { db = e.target.result; loadLocalTracks(); };
 
+        // Загрузка общих треков с авторизацией
         async function loadGlobalTracks() {
             try {
-                const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/playlist.json?t=${Date.now()}`;
-                const r = await fetch(url, { cache: 'no-store' });
+                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json?t=${Date.now()}`;
+                const r = await fetch(url, { 
+                    cache: 'no-store',
+                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+                });
                 if (!r.ok) {
                     await createPlaylistFile();
                     globalTracks = [];
                 } else {
-                    globalTracks = await r.json();
+                    const data = await r.json();
+                    const content = JSON.parse(atob(data.content));
+                    globalTracks = content;
                 }
                 renderGlobalTracks();
             } catch(e) {
@@ -480,11 +486,16 @@
         }
 
         async function createPlaylistFile() {
-            await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json`, {
-                method: 'PUT',
-                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: 'Init playlist', content: btoa('[]') })
-            });
+            try {
+                await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/playlist.json`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `token ${GITHUB_TOKEN}`, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ message: 'Init playlist', content: btoa('[]') })
+                });
+            } catch(e) {}
         }
 
         async function savePlaylist() {
