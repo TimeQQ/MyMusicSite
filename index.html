@@ -163,7 +163,7 @@
 
     <div class="section-title">🎵 Мои записи</div>
     <main class="music-grid" id="tracks-container">
-        <p style="color:var(--text-secondary);text-align:center;padding:2rem;">Загрузка...</p>
+        <p style="color:var(--text-secondary);text-align:center;padding:2rem;">Загрузка треков...</p>
     </main>
 
     <div class="player-bar">
@@ -175,14 +175,9 @@
     </div>
 
     <script>
-        // ============ ПЛЕЙЛИСТ ============
-        // Добавляй сюда свои треки: название, исполнитель, файл
-        const playlist = [
-            { name: "Nothing Else Matters", artist: "Metallica", file: "music/nothing-else-matters.mp3" },
-            { name: "Wish You Were Here", artist: "Pink Floyd", file: "music/wish-you-were-here.mp3" },
-            { name: "Hotel California", artist: "Eagles", file: "music/hotel-california.mp3" },
-            { name: "Stairway to Heaven", artist: "Led Zeppelin", file: "music/stairway-to-heaven.mp3" }
-        ];
+        // ============ НАСТРОЙКИ ============
+        const GITHUB_OWNER = 'TimeQQ';
+        const GITHUB_REPO = 'MyMusicSite';
         // =================================
 
         const container = document.getElementById('tracks-container');
@@ -190,6 +185,34 @@
         const playerTitle = document.getElementById('player-title');
         const playerArtist = document.getElementById('player-artist');
         const searchInput = document.getElementById('search-input');
+
+        let playlist = [];
+
+        // Автоматически сканирует папку music/ на GitHub
+        async function loadTracks() {
+            try {
+                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/music`;
+                const r = await fetch(url);
+                if (!r.ok) {
+                    container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:2rem;">Папка music не найдена</p>';
+                    return;
+                }
+                const files = await r.json();
+                
+                // Фильтруем только MP3 файлы
+                playlist = files
+                    .filter(f => f.name.toLowerCase().endsWith('.mp3'))
+                    .map(f => ({
+                        name: f.name.replace(/\.mp3$/i, '').replace(/[-_]/g, ' '),
+                        artist: 'Time\'s Music',
+                        file: f.download_url
+                    }));
+                
+                renderTracks();
+            } catch(e) {
+                container.innerHTML = '<p style="color:#ff4444;text-align:center;padding:2rem;">Ошибка загрузки</p>';
+            }
+        }
 
         function renderTracks() {
             const q = searchInput.value.toLowerCase();
@@ -205,7 +228,7 @@
                 return;
             }
             
-            filtered.forEach((t, i) => {
+            filtered.forEach(t => {
                 const card = document.createElement('div');
                 card.className = 'track-card';
                 card.innerHTML = `
@@ -234,7 +257,6 @@
 
         searchInput.addEventListener('input', renderTracks);
 
-        // Автовоспроизведение следующего
         audio.addEventListener('ended', () => {
             const idx = playlist.findIndex(t => t.file === audio.src);
             if (idx < playlist.length - 1) {
@@ -246,7 +268,7 @@
             }
         });
 
-        renderTracks();
+        loadTracks();
         console.log('🎸 Time\'s Music готов!');
     </script>
 </body>
